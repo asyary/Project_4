@@ -143,16 +143,24 @@ app.post('/send-message', async (req, res) => {
     status: true,
     response: "200 OK"
   });
-  let contacts = await client.getContacts()
-  let regX = req.body.regX
-  let message = req.body.message
+  const contacts = await client.getContacts()
+  const regX = req.body.regX
+  const message = req.body.message
   for (let contact of contacts) {
     if (contact.id.server == "c.us" && contact.name) {
       const number = contact.id._serialized
       const isRegisteredNumber = checkRegisteredNumber(number)
       if (contact.name.endsWith(regX) && isRegisteredNumber) {
+        let firstName = contact.name.split(" ")[0]
+        if (parseInt(firstName)) {
+          if (parseInt(firstName) <= 14) continue
+        } else {
+          let regex = /(^[Aa][a-zA-Z])|(^[Bb][a-rA-r])/g
+          if (regex.test(firstName)) continue
+        }
         await sleep(7000)
         client.sendMessage(number, message)
+        console.log(contact.name)
       }
     }
   }
