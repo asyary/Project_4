@@ -156,7 +156,7 @@ app.post('/send-message', async (req, res) => {
           if (parseInt(firstName) <= 14) return
         } else {
           let regex = /(^[Aa][a-zA-Z])|(^[Bb][a-rA-r])/g
-          if (!regex.test(firstName)) return
+          if (regex.test(firstName)) return
         }
         await sleep(7000)
         client.sendMessage(number, message)
