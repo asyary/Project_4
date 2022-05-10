@@ -153,13 +153,14 @@ app.post('/send-message', async (req, res) => {
       if (contact.name.endsWith(regX) && isRegisteredNumber) {
         let firstName = contact.name.split(" ")[0]
         if (parseInt(firstName)) {
-          if (parseInt(firstName) <= 14) return
+          if (parseInt(firstName) <= 14) continue
         } else {
           let regex = /(^[Aa][a-zA-Z])|(^[Bb][a-rA-r])/g
-          if (regex.test(firstName)) return
+          if (regex.test(firstName)) continue
         }
         await sleep(7000)
         client.sendMessage(number, message)
+        console.log(contact.name)
       }
     }
   }
