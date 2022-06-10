@@ -10,6 +10,8 @@ const fileUpload = require('express-fileupload');
 const axios = require('axios');
 const mime = require('mime-types');
 const moment = require('moment-timezone');
+const EventEmitter = require('node:events');
+const myEmitter = new EventEmitter();
 
 const port = process.env.PORT || 8080;
 
@@ -39,6 +41,13 @@ app.get('/send', (req, res) => {
     root: __dirname
   });
 });
+app.post('/stop', (req, res) => {
+  fs.writeFileSync("./stop.json", JSON.stringify("stop"))
+  res.status(200).json({
+    status: true,
+    response: "200 OK"
+  });
+});
 
 const client = new Client({
   restartOnAuthFail: true,
@@ -63,6 +72,10 @@ client.initialize();
 // Socket IO
 io.on('connection', function(socket) {
   socket.emit('message', 'Connecting...');
+
+  myEmitter.on('event', function(personName) {
+    socket.emit('message', personName)
+  })
 
   client.on('qr', (qr) => {
     console.log('QR RECEIVED', qr);
@@ -139,24 +152,34 @@ app.post('/send-message', async (req, res) => {
   //   });
   // });
   console.log(req.body)
-  res.status(200).json({
-    status: true,
-    response: "200 OK"
+  res.sendFile('send-message.html', {
+    root: __dirname
   });
+  fs.writeFileSync("./stop.json", "[]")
   let contacts = await client.getContacts()
   let regX = req.body.regX
   let message = req.body.message
+  await sleep(3000)
+  myEmitter.emit('event', "Regex is: " + regX)
+  myEmitter.emit('event', "Message is: " + message)
   for (let contact of contacts) {
     if (contact.id.server == "c.us" && contact.name) {
       const number = contact.id._serialized
       const isRegisteredNumber = checkRegisteredNumber(number)
       if (contact.name.endsWith(regX) && isRegisteredNumber) {
         await sleep(7000)
+        if (JSON.parse(fs.readFileSync("./stop.json")) == "stop") {
+          console.log("Stopped!")
+          myEmitter.emit('event', "Stopped!")
+          break
+        }
+        myEmitter.emit('event', contact.name)
         client.sendMessage(number, message)
         console.log(contact.name)
       }
     }
   }
+  myEmitter.emit('event', "Done!")
   console.log("Done!")
 });
 
